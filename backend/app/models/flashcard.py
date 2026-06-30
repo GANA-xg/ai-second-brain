@@ -1,13 +1,12 @@
-import uuid
 
-from sqlalchemy import ForeignKey, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import BaseModel
-from sqlalchemy import Enum
 import enum
+import uuid
 
+from sqlalchemy import Enum, ForeignKey, Index, Text
 
 class FlashcardDifficulty(str, enum.Enum):
     EASY = "EASY"
@@ -15,7 +14,13 @@ class FlashcardDifficulty(str, enum.Enum):
     HARD = "HARD"
 class Flashcard(BaseModel):
     __tablename__ = "flashcards"
-
+    __table_args__ = (
+        Index(
+            "ix_flashcards_user_created",
+            "user_id",
+            "created_at",
+        ),
+    )
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),

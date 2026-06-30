@@ -1,7 +1,15 @@
 import enum
 import uuid
 
-from sqlalchemy import Enum, ForeignKey, Integer, String, Text
+from sqlalchemy import (
+    CheckConstraint,
+    Enum,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -14,6 +22,8 @@ if TYPE_CHECKING:
     from app.models.chunk import Chunk
     from app.models.user import User
     from app.models.quiz import Quiz
+    from app.models.flashcard import Flashcard
+    from app.models.quiz import Quiz
 
 class DocumentStatus(str, enum.Enum):
     UPLOADED = "UPLOADED"
@@ -25,6 +35,23 @@ class DocumentStatus(str, enum.Enum):
 
 class Document(BaseModel):
     __tablename__ = "documents"
+
+    __table_args__ = (
+        Index(
+            "ix_documents_user_created",
+            "user_id",
+            "created_at",
+        ),
+        Index(
+            "ix_documents_user_status",
+            "user_id",
+            "status",
+        ),
+        CheckConstraint(
+            "file_size > 0",
+            name="ck_documents_file_size_positive",
+        ),
+    )
 
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),

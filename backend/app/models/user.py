@@ -1,13 +1,7 @@
-from typing import TYPE_CHECKING
-
 from sqlalchemy import Boolean, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-
 from app.models.base import BaseModel
-from app.models.flashcard import Flashcard
-from app.models.quiz import Quiz
-from app.models.memory import Memory
-
+from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from app.models.document import Document
     from app.models.conversation import Conversation
@@ -16,7 +10,8 @@ if TYPE_CHECKING:
     from app.models.memory import Memory
     from app.models.document import Document
     from app.models.conversation import Conversation
-    from app.models.quiz import Quiz
+    from app.models.base import BaseModel
+
 class User(BaseModel):
     __tablename__ = "users"
 
@@ -67,19 +62,4 @@ class User(BaseModel):
         back_populates="user",
         cascade="all, delete-orphan",
     )
-    conversations: Mapped[list["Conversation"]] = relationship(
-        back_populates="user",
-        cascade="all, delete-orphan",
-    )
-    flashcards: Mapped[list["Flashcard"]] = relationship(
-        back_populates="user",
-        cascade="all, delete-orphan",
-    )
-    quizzes: Mapped[list["Quiz"]] = relationship(
-        back_populates="user",
-        cascade="all, delete-orphan",
-    )
-    memories: Mapped[list["Memory"]] = relationship(
-        back_populates="user",
-        cascade="all, delete-orphan",
-    )
+    

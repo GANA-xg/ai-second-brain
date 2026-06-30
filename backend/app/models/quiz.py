@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from app.models.document import Document
     from app.models.quiz_attempt import QuizAttempt
     from app.models.user import User
+    
 class Quiz(BaseModel):
     __tablename__ = "quizzes"
 

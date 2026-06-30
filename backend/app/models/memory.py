@@ -1,7 +1,7 @@
 import enum
 import uuid
 
-from sqlalchemy import Enum, ForeignKey, String, Text
+from sqlalchemy import Enum, ForeignKey, String, Text, Index, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -16,7 +16,18 @@ class MemoryType(str, enum.Enum):
 
 class Memory(BaseModel):
     __tablename__ = "memories"
-
+    __table_args__ = (
+        Index(
+            "ix_memories_user_type",
+            "user_id",
+            "memory_type",
+        ),
+        UniqueConstraint(
+            "user_id",
+            "key",
+            name="uq_memories_user_key",
+        ),
+    )
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),

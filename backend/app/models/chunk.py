@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import ForeignKey, Integer, Text
+from sqlalchemy import CheckConstraint, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -10,6 +10,21 @@ from app.models.base import BaseModel
 class Chunk(BaseModel):
     __tablename__ = "chunks"
 
+    __table_args__ = (
+        Index(
+            "ix_chunks_document_order",
+            "document_id",
+            "chunk_index",
+        ),
+        CheckConstraint(
+            "chunk_index >= 0",
+            name="ck_chunks_chunk_index_non_negative",
+        ),
+        CheckConstraint(
+            "token_count > 0",
+            name="ck_chunks_token_count_positive",
+        ),
+    )
     document_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("documents.id", ondelete="CASCADE"),
@@ -33,8 +48,9 @@ class Chunk(BaseModel):
     )
 
     embedding_id: Mapped[str | None] = mapped_column(
-        nullable=True,
+        String(255),
         unique=True,
+        nullable=True,
     )
 
     document: Mapped["Document"] = relationship(
