@@ -14,10 +14,7 @@ class Base(DeclarativeBase):
 
 
 class BaseModel(Base):
-    """
-    Abstract base model that provides common fields
-    for all database tables.
-    """
+    """Abstract base model that provides common fields for all database tables."""
 
     __abstract__ = True
 

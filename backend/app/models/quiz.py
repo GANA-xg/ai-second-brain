@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from app.models.document import Document
     from app.models.quiz_attempt import QuizAttempt
+    from app.models.quiz_question import QuizQuestion
     from app.models.user import User
     
 class Quiz(BaseModel):
@@ -36,6 +37,11 @@ class Quiz(BaseModel):
     total_questions: Mapped[int] = mapped_column(
         Integer,
         nullable=False,
+    )
+
+    questions: Mapped[list["QuizQuestion"]] = relationship(
+        back_populates="quiz",
+        cascade="all, delete-orphan",
     )
 
     user: Mapped["User"] = relationship(

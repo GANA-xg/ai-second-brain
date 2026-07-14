@@ -217,3 +217,23 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 .DS_Store
+# Next.js
+frontend/.next/
+frontend/.next.bak/
+
+# Local env
+frontend/.env.local
+
+# TypeScript
+*.tsbuildinfo
+
+# Node
+frontend/node_modules/
+
+# Python
+__pycache__/
+*.pyc
+
+# Backend
+backend/storage/
+.qdrant-initialized

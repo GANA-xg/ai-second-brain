@@ -5,15 +5,28 @@ from app.core.logging import setup_logging
 
 from app.middleware.request_id import RequestIDMiddleware
 from app.middleware.logging import LoggingMiddleware
-
+from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1.api import api_router
 
 
-setup_logging()
+setup_logging(level=settings.AUTH_LOG_LEVEL)
 
 
 app = FastAPI(
     title=settings.APP_NAME
+)
+origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 

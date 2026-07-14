@@ -5,6 +5,12 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import BaseModel
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.models.chunk_embedding import ChunkEmbedding
+    from app.models.flashcard import Flashcard
+    from app.models.quiz_question import QuizQuestion
 
 
 class Chunk(BaseModel):
@@ -21,8 +27,12 @@ class Chunk(BaseModel):
             name="ck_chunks_chunk_index_non_negative",
         ),
         CheckConstraint(
-            "token_count > 0",
-            name="ck_chunks_token_count_positive",
+            "character_end > character_start",
+            name="ck_chunks_character_range_valid",
+        ),
+        CheckConstraint(
+            "token_estimate > 0",
+            name="ck_chunks_token_estimate_positive",
         ),
     )
     document_id: Mapped[uuid.UUID] = mapped_column(
@@ -42,9 +52,44 @@ class Chunk(BaseModel):
         nullable=False,
     )
 
-    token_count: Mapped[int] = mapped_column(
+    source_type: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+    )
+
+    page_number: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+    )
+
+    slide_number: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+    )
+
+    section: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+    )
+
+    character_start: Mapped[int] = mapped_column(
         Integer,
         nullable=False,
+    )
+
+    character_end: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+    )
+
+    token_estimate: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+    )
+
+    token_count: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
     )
 
     embedding_id: Mapped[str | None] = mapped_column(
@@ -55,4 +100,19 @@ class Chunk(BaseModel):
 
     document: Mapped["Document"] = relationship(
         back_populates="chunks",
+    )
+
+    embeddings: Mapped[list["ChunkEmbedding"]] = relationship(
+        back_populates="chunk",
+        cascade="all, delete-orphan",
+    )
+
+    flashcards: Mapped[list["Flashcard"]] = relationship(
+        back_populates="source_chunk",
+        cascade="all, delete-orphan",
+    )
+
+    quiz_questions: Mapped[list["QuizQuestion"]] = relationship(
+        back_populates="source_chunk",
+        cascade="all, delete-orphan",
     )

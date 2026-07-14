@@ -97,6 +97,16 @@ class Document(BaseModel):
         nullable=True,
     )
 
+    sha256_checksum: Mapped[str | None] = mapped_column(
+        String(64),
+        nullable=True,
+    )
+
+    extension: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+    )
+
     user: Mapped["User"] = relationship(
         back_populates="documents",
     )

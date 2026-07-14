@@ -1,0 +1,97 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Apple Design System ── */
+:root {
+  --container-max: 1120px;
+  --readable: 65ch;
+
+  --space-xxs: 4px;  --space-xs: 8px;  --space-sm: 12px;
+  --space-md: 17px; --space-lg: 24px; --space-xl: 32px;
+  --space-xxl: 48px; --space-section: 80px;
+
+  --radius-xs: 5px; --radius-sm: 8px;  --radius-md: 11px;
+  --radius-lg: 18px; --radius-pill: 9999px;
+
+  --shadow-product: 3px 5px 30px rgba(0,0,0,0.22);
+}
+
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; }
+  html { scroll-behavior: smooth; color-scheme: dark; }
+
+  body {
+    font-family: "SF Pro Display", "SF Pro Text", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 17px;
+    font-weight: 400;
+    line-height: 1.47;
+    letter-spacing: -0.374px;
+    color: #FFFFFF;
+    background-color: #272729;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4 {
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: #FFFFFF;
+  }
+
+  ::selection { background-color: rgba(0,102,204,0.3); }
+  :focus-visible { outline: 2px solid #0071E3; outline-offset: 2px; border-radius: var(--radius-xs); }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: var(--radius-pill); }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  }
+}
+
+@layer components {
+  .text-hero { font-size: 56px; font-weight: 600; line-height: 1.07; letter-spacing: -0.28px; }
+  .text-display-lg { font-size: 40px; font-weight: 600; line-height: 1.1; letter-spacing: 0; }
+  .text-display-md { font-size: 34px; font-weight: 600; line-height: 1.47; letter-spacing: -0.374px; }
+  .text-lead { font-size: 28px; font-weight: 400; line-height: 1.14; letter-spacing: 0.196px; }
+  .text-body { font-size: 17px; font-weight: 400; line-height: 1.47; letter-spacing: -0.374px; }
+  .text-body-strong { font-size: 17px; font-weight: 600; line-height: 1.24; letter-spacing: -0.374px; }
+  .text-caption { font-size: 14px; font-weight: 400; line-height: 1.43; letter-spacing: -0.224px; }
+  .text-caption-strong { font-size: 14px; font-weight: 600; line-height: 1.29; letter-spacing: -0.224px; }
+  .text-fine { font-size: 12px; font-weight: 400; line-height: 1.0; letter-spacing: -0.12px; }
+  .text-nav { font-size: 12px; font-weight: 400; line-height: 1.0; letter-spacing: -0.12px; }
+
+  .focus-ring { outline: none; }
+  .focus-ring:focus-visible { outline: 2px solid #0071E3; outline-offset: 2px; }
+
+  .skeleton-pulse { @apply animate-pulse rounded-[11px]; background: rgba(255,255,255,0.06); }
+
+  .app-surface { background-color: #272729; }
+  .app-surface-secondary { background-color: #2A2A2C; }
+  .app-surface-tertiary { background-color: #252527; }
+  .app-surface-black { background-color: #000000; }
+
+  .apple-prose {
+    max-width: var(--readable);
+    line-height: 1.47;
+    color: rgba(255,255,255,0.85);
+  }
+  .apple-prose p { margin-bottom: 1em; }
+  .apple-prose ul { list-style: disc; padding-left: 1.5em; margin-bottom: 1em; }
+  .apple-prose ol { list-style: decimal; padding-left: 1.5em; margin-bottom: 1em; }
+  .apple-prose li { margin-bottom: 0.25em; }
+  .apple-prose strong { font-weight: 600; color: #FFFFFF; }
+  .apple-prose code {
+    font-family: "SF Mono", "Fira Code", monospace; font-size: 0.875em;
+    background: rgba(255,255,255,0.08); padding: 0.125em 0.375em;
+    border-radius: 4px; color: #2997FF;
+  }
+  .apple-prose pre {
+    background: rgba(255,255,255,0.04); padding: 1em;
+    border-radius: var(--radius-lg); overflow-x: auto; margin-bottom: 1em;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+}
