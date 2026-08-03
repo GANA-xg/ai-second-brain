@@ -130,8 +130,11 @@ def get_messages(
         msg_ids = cached.get("message_ids", [])
         cached_total = cached.get("total", 0)
         cached_has_next = cached.get("has_next", False)
-        messages = [db.query(Message).filter(Message.id == mid).first() for mid in msg_ids]
-        messages = [m for m in messages if m is not None]
+        # msg_ids arrive as strings after JSON deserialization, but
+        # UUID(as_uuid=True) needs uuid.UUID instances for the bind
+        uuids = [uuid.UUID(mid) for mid in msg_ids]
+        by_id = {m.id: m for m in db.query(Message).filter(Message.id.in_(uuids)).all()}
+        messages = [by_id[u] for u in uuids if u in by_id]
         return messages, cached_total, cached_has_next
 
     total = (

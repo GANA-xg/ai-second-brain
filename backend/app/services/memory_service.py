@@ -199,12 +199,16 @@ def list_memories(
         # Cached data is a list of dicts plus total count
         cached_memories = cached.get("memories", [])
         cached_total = cached.get("total", 0)
-        # Convert dicts back to Memory ORM objects
-        memories = [
-            db.query(Memory).filter(Memory.id == m["id"]).first()
-            for m in cached_memories
-        ]
-        memories = [m for m in memories if m is not None]
+        # Convert dicts back to Memory ORM objects.
+        # m["id"] arrives as a string after JSON deserialization, but the
+        # UUID(as_uuid=True) column expects a uuid.UUID instance in the bind.
+        memory_ids = [uuid.UUID(m["id"]) for m in cached_memories]
+        memories_by_id = {
+            m.id: m
+            for m in db.query(Memory).filter(Memory.id.in_(memory_ids)).all()
+        }
+        # Preserve the cached ordering
+        memories = [memories_by_id[mid] for mid in memory_ids if mid in memories_by_id]
         return memories, cached_total
 
     query: Query = db.query(Memory).filter(Memory.user_id == user_id)

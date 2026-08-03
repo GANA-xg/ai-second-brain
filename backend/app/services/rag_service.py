@@ -37,7 +37,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.cache_keys import search_key
-from app.services.cache_service import cache_service, invalidate_search_cache
+from app.services.cache_service import cache_service, invalidate_message_cache, invalidate_search_cache
 from app.models.chunk import Chunk
 from app.models.conversation import Conversation
 from app.models.document import Document
@@ -270,6 +270,12 @@ def _store_messages(
     db.add(assistant_msg)
     db.commit()
     db.refresh(assistant_msg)
+
+    # The conversation_messages cache was populated when the client last
+    # GETed this conversation (likely with zero messages). If we don't
+    # invalidate it here, the next GET returns the stale empty page.
+    invalidate_message_cache(conversation_id)
+
     return assistant_msg.id
 
 
@@ -796,6 +802,10 @@ def stream_answer(
     db.commit()
     db.refresh(assistant_msg)
     assistant_msg_id = assistant_msg.id
+
+    # User + assistant rows now exist for this conversation; drop the cached
+    # empty page so the next GET reflects them.
+    invalidate_message_cache(conv.id)
 
     # ── Step 9: Stream from Gemini ────────────────────────────────────
     full_answer = ""
