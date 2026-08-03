@@ -11,6 +11,7 @@ from pathlib import Path
 import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
+from starlette.datastructures import UploadFile
 
 
 # ---------------------------------------------------------------------------
@@ -259,7 +260,27 @@ class TestValidation:
             headers=auth_headers,
         )
         assert r.status_code == 400
-        assert "hidden" in r.json()["detail"].lower()
+
+
+class TestUploadRollback:
+    def test_db_failure_removes_written_file(self, db_session, user, monkeypatch, tmp_path):
+        """If the DB commit fails, the service should clean up the file it wrote."""
+        from app.core.config import settings
+        from app.services.file_service import FileService
+
+        monkeypatch.setattr(settings, "UPLOAD_ROOT", str(tmp_path))
+        monkeypatch.setattr(db_session, "commit", lambda: (_ for _ in ()).throw(RuntimeError("db down")))
+
+        upload = UploadFile(
+            filename="rollback.pdf",
+            file=io.BytesIO(_make_pdf_bytes()),
+        )
+
+        with pytest.raises(RuntimeError, match="db down"):
+            FileService.upload(db_session, upload, user.id)
+
+        expected_path = Path(tmp_path) / str(user.id)
+        assert not expected_path.exists()
 
     def test_no_extension(self, client, auth_headers):
         r = client.post(

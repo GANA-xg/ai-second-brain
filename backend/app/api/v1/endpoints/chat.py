@@ -374,6 +374,7 @@ def ask_question(
             conversation_id=request.conversation_id,
             top_k=request.top_k,
             score_threshold=request.score_threshold,
+            document_ids=request.document_ids,
         )
     except RAGError as e:
         logger.error(
@@ -457,6 +458,7 @@ async def stream_question(
                 conversation_id=request.conversation_id,
                 top_k=request.top_k,
                 score_threshold=request.score_threshold,
+                document_ids=request.document_ids,
             )
 
             for event in generator:

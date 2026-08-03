@@ -30,6 +30,9 @@ class ChatRequest(BaseModel):
     )
     top_k: Optional[int] = Field(None, ge=1, le=50, description="Override default Top-K")
     score_threshold: Optional[float] = Field(None, ge=0.0, le=1.0, description="Override default score threshold")
+    document_ids: Optional[list[UUID]] = Field(
+        None, description="Filter search to specific document IDs. None means search all documents."
+    )
 
 
 class RetrievedChunk(BaseModel):

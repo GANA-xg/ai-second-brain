@@ -418,6 +418,7 @@ def answer_question(
     conversation_id: Optional[uuid.UUID] = None,
     top_k: Optional[int] = None,
     score_threshold: Optional[float] = None,
+    document_ids: Optional[list[uuid.UUID]] = None,
 ) -> ChatResponse:
     """Run the full RAG pipeline end-to-end.
 
@@ -444,7 +445,7 @@ def answer_question(
     logger.info("rag.embedding_generated", latency_ms=round(embed_latency, 2))
 
     # ── Step 2: Search Qdrant (with cache) ────────────────────────────
-    cache_key = search_key(user_id, question)
+    cache_key = search_key(user_id, question, document_ids)
     search_results = cache_service.get(cache_key)
     search_latency = 0.0  # default for cache hits
     if search_results is not None:
@@ -461,6 +462,7 @@ def answer_question(
             query_vector=query_vector,
             limit=k,
             score_threshold=threshold,
+            document_ids=document_ids,
         )
         search_latency = (time.time() - search_start) * 1000
 
@@ -614,6 +616,7 @@ def stream_answer(
     conversation_id: Optional[uuid.UUID] = None,
     top_k: Optional[int] = None,
     score_threshold: Optional[float] = None,
+    document_ids: Optional[list[uuid.UUID]] = None,
 ) -> Generator[dict[str, Any], None, ChatResponse]:
     """Stream a RAG answer token-by-token via Gemini streaming.
 
@@ -662,7 +665,7 @@ def stream_answer(
         return _no_context_response(db, user_id, conv.id, question, 0, pipeline_start, k, threshold)
 
     # ── Step 4: Search Qdrant (with cache) ────────────────────────────
-    cache_key = search_key(user_id, question)
+    cache_key = search_key(user_id, question, document_ids)
     search_results = cache_service.get(cache_key)
     search_latency = 0.0  # default for cache hits
     if search_results is not None:
@@ -680,6 +683,7 @@ def stream_answer(
             query_vector=query_vector,
             limit=k,
             score_threshold=threshold,
+            document_ids=document_ids,
         )
         search_latency = (time.time() - search_start) * 1000
         logger.info(

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, String
+from sqlalchemy import Boolean, DateTime, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import BaseModel
 from typing import TYPE_CHECKING
@@ -48,6 +48,25 @@ class User(BaseModel):
 
     password_reset_token_expires_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
+        nullable=True,
+        default=None,
+    )
+
+    username: Mapped[str | None] = mapped_column(
+        String(255),
+        unique=True,
+        nullable=True,
+        default=None,
+    )
+
+    bio: Mapped[str | None] = mapped_column(
+        String(1000),
+        nullable=True,
+        default=None,
+    )
+
+    avatar_url: Mapped[str | None] = mapped_column(
+        Text,
         nullable=True,
         default=None,
     )

@@ -12,13 +12,17 @@ def md5_hash(text: str) -> str:
     return hashlib.md5(text.encode("utf-8")).hexdigest()
 
 
-def search_key(user_id: UUID, query: str) -> str:
+def search_key(user_id: UUID, query: str, document_ids: Optional[list[UUID]] = None) -> str:
     """Generate cache key for search results.
 
-    Format: search:{user_id}:{md5(query)}
+    Format: search:{user_id}:{md5(query)}:{md5(document_ids)}
     """
     query_hash = md5_hash(query)
-    return f"search:{user_id}:{query_hash}"
+    if document_ids:
+        doc_hash = md5_hash(",".join(str(d) for d in sorted(document_ids)))
+    else:
+        doc_hash = "all"
+    return f"search:{user_id}:{query_hash}:{doc_hash}"
 
 
 def document_list_key(user_id: UUID) -> str:

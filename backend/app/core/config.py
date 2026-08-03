@@ -38,7 +38,7 @@ class Settings(BaseSettings):
 
     GEMINI_API_KEY: str = ""
 
-    # -- LLM provider (openrouter | openai | gemini) --
+    # -- LLM provider (openrouter | openai | gemini | opencode) --
     LLM_PROVIDER: str = "openrouter"
     LLM_MODEL: str = "google/gemini-2.0-flash-lite"
     OPENROUTER_API_KEY: str = ""
@@ -132,6 +132,9 @@ class Settings(BaseSettings):
     CACHE_CONVERSATION_TTL: int = 120  # 2 minutes
     CACHE_MESSAGE_TTL: int = 120  # 2 minutes
 
-    GROK_API_KEY: str = ""
-    LLM_PROVIDER: str = "grok"
+    # -- Opencode settings --
+    OPENCODE_API_KEY: str = ""
+    OPENCODE_MODEL: str = "opencode/big-pickle"
+    OPENCODE_BASE_URL: str = "https://api.opencode.ai/v1"
+
 settings = Settings()
