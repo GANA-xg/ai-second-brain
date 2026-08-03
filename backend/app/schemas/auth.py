@@ -55,6 +55,16 @@ class UserResponse(BaseModel):
     email: str
     full_name: str
     is_active: bool
+    username: str | None = None
+    bio: str | None = None
+    avatar_url: str | None = None
+
+
+class ProfileUpdateRequest(BaseModel):
+    full_name: str | None = Field(None, min_length=2, max_length=255)
+    username: str | None = Field(None, min_length=3, max_length=255)
+    bio: str | None = Field(None, max_length=1000)
+    avatar_url: str | None = Field(None, max_length=500000)
 
 
 class ForgotPasswordRequest(BaseModel):

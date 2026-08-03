@@ -7,6 +7,7 @@ __pycache__/
 *.so
 
 # Distribution / packaging
+# Python build artifacts
 .Python
 build/
 develop-eggs/
@@ -14,8 +15,10 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+# lib/ and lib64/ match any directory named exactly that at any depth — including
+# frontend/src/lib/! Use a leading slash to anchor to repo root.
+/lib/
+/lib64/
 parts/
 sdist/
 var/
@@ -237,3 +240,4 @@ __pycache__/
 # Backend
 backend/storage/
 .qdrant-initialized
+.gstack/

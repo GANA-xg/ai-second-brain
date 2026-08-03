@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import health, auth, files, chat, memory, flashcards, quiz
+from app.api.v1.endpoints import health, auth, files, chat, memory, flashcards, quiz, voice
 
 
 api_router = APIRouter()
@@ -43,4 +43,9 @@ api_router.include_router(
 api_router.include_router(
     quiz.router,
     tags=["Quizzes"],
+)
+
+api_router.include_router(
+    voice.router,
+    tags=["Voice"],
 )

@@ -37,7 +37,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.cache_keys import search_key
-from app.services.cache_service import cache_service, invalidate_search_cache
+from app.services.cache_service import cache_service, invalidate_message_cache, invalidate_search_cache
 from app.models.chunk import Chunk
 from app.models.conversation import Conversation
 from app.models.document import Document
@@ -270,6 +270,12 @@ def _store_messages(
     db.add(assistant_msg)
     db.commit()
     db.refresh(assistant_msg)
+
+    # The conversation_messages cache was populated when the client last
+    # GETed this conversation (likely with zero messages). If we don't
+    # invalidate it here, the next GET returns the stale empty page.
+    invalidate_message_cache(conversation_id)
+
     return assistant_msg.id
 
 
@@ -418,6 +424,7 @@ def answer_question(
     conversation_id: Optional[uuid.UUID] = None,
     top_k: Optional[int] = None,
     score_threshold: Optional[float] = None,
+    document_ids: Optional[list[uuid.UUID]] = None,
 ) -> ChatResponse:
     """Run the full RAG pipeline end-to-end.
 
@@ -444,7 +451,7 @@ def answer_question(
     logger.info("rag.embedding_generated", latency_ms=round(embed_latency, 2))
 
     # ── Step 2: Search Qdrant (with cache) ────────────────────────────
-    cache_key = search_key(user_id, question)
+    cache_key = search_key(user_id, question, document_ids)
     search_results = cache_service.get(cache_key)
     search_latency = 0.0  # default for cache hits
     if search_results is not None:
@@ -461,6 +468,7 @@ def answer_question(
             query_vector=query_vector,
             limit=k,
             score_threshold=threshold,
+            document_ids=document_ids,
         )
         search_latency = (time.time() - search_start) * 1000
 
@@ -614,6 +622,7 @@ def stream_answer(
     conversation_id: Optional[uuid.UUID] = None,
     top_k: Optional[int] = None,
     score_threshold: Optional[float] = None,
+    document_ids: Optional[list[uuid.UUID]] = None,
 ) -> Generator[dict[str, Any], None, ChatResponse]:
     """Stream a RAG answer token-by-token via Gemini streaming.
 
@@ -662,7 +671,7 @@ def stream_answer(
         return _no_context_response(db, user_id, conv.id, question, 0, pipeline_start, k, threshold)
 
     # ── Step 4: Search Qdrant (with cache) ────────────────────────────
-    cache_key = search_key(user_id, question)
+    cache_key = search_key(user_id, question, document_ids)
     search_results = cache_service.get(cache_key)
     search_latency = 0.0  # default for cache hits
     if search_results is not None:
@@ -680,6 +689,7 @@ def stream_answer(
             query_vector=query_vector,
             limit=k,
             score_threshold=threshold,
+            document_ids=document_ids,
         )
         search_latency = (time.time() - search_start) * 1000
         logger.info(
@@ -792,6 +802,10 @@ def stream_answer(
     db.commit()
     db.refresh(assistant_msg)
     assistant_msg_id = assistant_msg.id
+
+    # User + assistant rows now exist for this conversation; drop the cached
+    # empty page so the next GET reflects them.
+    invalidate_message_cache(conv.id)
 
     # ── Step 9: Stream from Gemini ────────────────────────────────────
     full_answer = ""

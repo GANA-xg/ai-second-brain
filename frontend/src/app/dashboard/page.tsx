@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import { ProtectedLayout } from "@/components/layout/ProtectedLayout";
 import { TopBar } from "@/components/layout/TopBar";
 import { Button } from "@/components/ui/Button";
@@ -7,65 +7,90 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { DocumentCard } from "@/components/documents/DocumentCard";
 import { UploadZone } from "@/components/documents/UploadZone";
+import { useToast } from "@/components/ui/Toast";
 import { documentsApi } from "@/lib/api-client";
-import type { DocumentResponse } from "@/lib/types";
+import { useDocuments } from "@/context/DocumentContext";
+import { FileText } from "lucide-react";
 
 export default function DashboardPage() {
-  const [documents, setDocuments] = useState<DocumentResponse[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { documents, isLoading: loading, error, refresh } = useDocuments();
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [error, setError] = useState<string|null>(null);
-
-  const fetchDocuments = useCallback(async () => {
-    setLoading(true); setError(null);
-    try { const data = await documentsApi.list(); setDocuments(data.documents); }
-    catch { setError("Failed to load documents"); }
-    finally { setLoading(false); }
-  }, []);
-
-  useEffect(() => { fetchDocuments(); }, [fetchDocuments]);
+  const { toast } = useToast();
 
   const handleUpload = useCallback(async (file: File) => {
-    setUploading(true); setUploadProgress(0);
+    setUploading(true);
+    setUploadProgress(0);
     try {
-      const interval = setInterval(() => setUploadProgress(p => Math.min(p+15,85)), 200);
+      const interval = setInterval(() => setUploadProgress(p => Math.min(p + 15, 85)), 200);
       await documentsApi.upload(file);
       clearInterval(interval);
       setUploadProgress(100);
-      setTimeout(() => { setUploadProgress(0); setUploading(false); fetchDocuments(); }, 400);
-    } catch { setUploading(false); setUploadProgress(0); }
-  }, [fetchDocuments]);
+      setTimeout(() => {
+        setUploadProgress(0);
+        setUploading(false);
+        refresh();
+        toast("Document uploaded successfully");
+      }, 400);
+    } catch (err) {
+      setUploading(false);
+      setUploadProgress(0);
+      console.error("[Dashboard] upload:", err);
+      toast("Upload failed", "error");
+    }
+  }, [refresh, toast]);
 
   const handleDelete = useCallback(async (id: string) => {
-    try { await documentsApi.delete(id); setDocuments(p => p.filter(d => d.id !== id)); }
-    catch { /* handled by interceptor */ }
-  }, []);
+    try {
+      await documentsApi.delete(id);
+      refresh();
+      toast("Document deleted");
+    } catch (err) {
+      console.error("[Dashboard] delete:", err);
+      toast("Failed to delete document", "error");
+    }
+  }, [refresh, toast]);
 
   return (
     <ProtectedLayout>
-      <TopBar title="Documents" />
+      <TopBar
+        title="Documents"
+        subtitle="Manage your knowledge base"
+        rightAction={
+          documents.length > 0 ? (
+            <span className="text-body-sm text-ink-muted">
+              {documents.length} document{documents.length !== 1 ? "s" : ""}
+            </span>
+          ) : undefined
+        }
+      />
 
-      {/* Upload Zone */}
       <div className="mb-8">
         <UploadZone onUpload={handleUpload} uploading={uploading} progress={uploadProgress} />
       </div>
 
-      {/* Documents List */}
       {loading ? (
         <div className="space-y-3">
-          {[1,2,3].map(i=><Skeleton key={i} className="h-16 w-full" />)}
+          {[1, 2, 3].map(i => (
+            <Skeleton key={i} className="h-16 w-full" />
+          ))}
         </div>
       ) : error ? (
-        <div className="text-center py-12">
-          <p className="text-[17px] text-apple-red mb-4">{error}</p>
-          <Button variant="secondary" onClick={fetchDocuments}>Retry</Button>
+        <div className="text-center py-16">
+          <p className="text-body-md text-error mb-4">{error}</p>
+          <Button variant="secondary" onClick={refresh}>Retry</Button>
         </div>
       ) : documents.length === 0 ? (
-        <EmptyState title="No documents yet" description="Upload a PDF, DOCX, or TXT to get started." icon={<svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>} />
+        <EmptyState
+          title="No documents yet"
+          description="Upload a PDF, DOCX, or TXT to get started with your AI knowledge base."
+          icon={<FileText className="w-8 h-8" />}
+        />
       ) : (
-        <div className="space-y-3">
-          {documents.map(doc => <DocumentCard key={doc.id} doc={doc} onDelete={handleDelete} />)}
+        <div className="space-y-2">
+          {documents.map(doc => (
+            <DocumentCard key={doc.id} doc={doc} onDelete={handleDelete} />
+          ))}
         </div>
       )}
     </ProtectedLayout>

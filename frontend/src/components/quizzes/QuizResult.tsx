@@ -1,47 +1,110 @@
 "use client";
 import React from "react";
-import { clsx } from "clsx";
-import type { AttemptAnswerResult } from "@/lib/types";
+import { cn } from "@/lib/utils";
+import type { QuizAttemptResponse } from "@/lib/types";
+import { CheckCircle, XCircle } from "lucide-react";
 
-interface QuizResultProps { score: number; totalQuestions: number; correctAnswers: number; results: AttemptAnswerResult[]; }
+interface QuizResultProps {
+  result: QuizAttemptResponse;
+  onRetry?: () => void;
+  onBack?: () => void;
+}
 
-export function QuizResult({ score, totalQuestions, correctAnswers, results }: QuizResultProps) {
-  const pct=totalQuestions>0?Math.round((correctAnswers/totalQuestions)*100):0;
-  const gradeColor=pct>=80?"text-apple-green":pct>=60?"text-apple-yellow":"text-apple-red";
-  const gradeRing=pct>=80?"stroke-apple-green":pct>=60?"stroke-apple-yellow":"stroke-apple-red";
-  const radius=54; const circ=2*Math.PI*radius; const off=circ-(pct/100)*circ;
+export function QuizResult({ result, onRetry, onBack }: QuizResultProps) {
+  const percentage = Math.round((result.score / result.total_questions) * 100);
+
+  const getGrade = () => {
+    if (percentage >= 90) return { label: "Excellent!", color: "text-success" };
+    if (percentage >= 70) return { label: "Good job!", color: "text-info" };
+    if (percentage >= 50) return { label: "Keep trying!", color: "text-warning" };
+    return { label: "Needs practice", color: "text-error" };
+  };
+
+  const grade = getGrade();
 
   return (
-    <div className="w-full max-w-2xl mx-auto animate-slide-up">
+    <div className="animate-fade-in-up">
+      {/* Score Ring */}
       <div className="flex flex-col items-center mb-10">
-        <div className="relative w-36 h-36 mb-4">
-          <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120">
-            <circle cx="60" cy="60" r={radius} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="8" />
-            <circle cx="60" cy="60" r={radius} fill="none" stroke="currentColor" strokeWidth="8" strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={off} className={clsx("transition-all duration-700 ease-out",gradeRing)} />
+        <div className="relative w-32 h-32 mb-4">
+          <svg className="w-32 h-32 -rotate-90" viewBox="0 0 120 120">
+            <circle cx="60" cy="60" r="52" fill="none" stroke="var(--canvas-strong)" strokeWidth="8" />
+            <circle
+              cx="60"
+              cy="60"
+              r="52"
+              fill="none"
+              stroke={percentage >= 70 ? "var(--success)" : percentage >= 50 ? "var(--warning)" : "var(--error)"}
+              strokeWidth="8"
+              strokeLinecap="round"
+              strokeDasharray={`${2 * Math.PI * 52}`}
+              strokeDashoffset={`${2 * Math.PI * 52 * (1 - percentage / 100)}`}
+              className="transition-all duration-1000 ease-out"
+            />
           </svg>
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className={clsx("text-[34px] font-bold",gradeColor)}>{pct}%</span>
-            <span className="text-[13px] text-text-tertiary mt-0.5">{correctAnswers}/{totalQuestions}</span>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="text-hero-sm text-ink font-bold">{percentage}%</span>
           </div>
         </div>
-        <h2 className="text-[28px] font-semibold text-text-primary mb-1">{pct>=80?"Great job!":pct>=60?"Good effort!":"Keep practicing!"}</h2>
-        <p className="text-[15px] text-text-tertiary">Score: {score.toFixed(1)} points</p>
+        <h2 className={cn("text-display-md", grade.color)}>{grade.label}</h2>
+        <p className="text-body-md text-ink-muted mt-1">
+          {result.correct_answers} of {result.total_questions} correct
+        </p>
       </div>
-      <div className="space-y-3">
-        <h3 className="text-[13px] font-semibold text-text-tertiary uppercase tracking-wider">Question Breakdown</h3>
-        {results.map((r,idx)=><div key={idx} className={clsx("p-4 rounded-lg border transition-all",r.is_correct?"bg-apple-green/10 border-apple-green/20":"bg-apple-red/10 border-apple-red/20")}>
-          <div className="flex items-start gap-3">
-            <div className={clsx("flex-shrink-0 w-7 h-7 rounded-pill flex items-center justify-center text-[13px] font-bold mt-0.5",r.is_correct?"bg-apple-green/20 text-apple-green":"bg-apple-red/20 text-apple-red")}>{r.is_correct?"✓":"✗"}</div>
+
+      {/* Breakdown */}
+      <div className="space-y-3 mb-8">
+        {result.results.map((r, i) => (
+          <div
+            key={i}
+            className={cn(
+              "flex items-start gap-3 p-4 rounded-xl border",
+              r.is_correct
+                ? "bg-success-light border-success/20"
+                : "bg-rausch-light border-rausch/20"
+            )}
+          >
+            {r.is_correct ? (
+              <CheckCircle className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
+            ) : (
+              <XCircle className="w-5 h-5 text-error flex-shrink-0 mt-0.5" />
+            )}
             <div className="flex-1 min-w-0">
-              <p className="text-[15px] font-medium text-text-primary mb-2">{idx+1}. {r.question_text}</p>
-              <div className="space-y-1 text-[15px]">
-                <p className="text-text-secondary"><span className="font-medium">Your answer:</span> <span className={r.is_correct?"text-apple-green":"text-apple-red"}>{r.user_answer}</span></p>
-                {!r.is_correct&&<p className="text-text-secondary"><span className="font-medium">Correct answer:</span> <span className="text-apple-green">{r.correct_answer}</span></p>}
-              </div>
-              {r.explanation&&<div className="mt-2 pt-2 border-t border-white/10"><p className="text-[13px] text-text-tertiary leading-relaxed">{r.explanation}</p></div>}
+              <p className="text-body-sm text-ink font-medium mb-1">{r.question_text}</p>
+              <p className="text-caption-sm text-ink-muted">
+                Your answer: <span className={r.is_correct ? "text-success" : "text-error"}>{r.user_answer}</span>
+              </p>
+              {!r.is_correct && (
+                <p className="text-caption-sm text-success mt-0.5">
+                  Correct: {r.correct_answer}
+                </p>
+              )}
+              {r.explanation && (
+                <p className="text-caption-sm text-ink-muted-soft mt-1 italic">{r.explanation}</p>
+              )}
             </div>
           </div>
-        </div>)}
+        ))}
+      </div>
+
+      {/* Actions */}
+      <div className="flex items-center justify-center gap-3">
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="px-6 py-2.5 rounded-full bg-canvas-soft text-ink text-body-sm font-medium hover:bg-canvas-strong transition-colors"
+          >
+            Back to Quizzes
+          </button>
+        )}
+        {onRetry && (
+          <button
+            onClick={onRetry}
+            className="px-6 py-2.5 rounded-full bg-rausch text-white text-body-sm font-medium hover:bg-rausch-active transition-colors"
+          >
+            Try Again
+          </button>
+        )}
       </div>
     </div>
   );

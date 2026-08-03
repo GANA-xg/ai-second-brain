@@ -142,8 +142,22 @@ class TestEmbeddingGeneration:
             e, _, _ = generate_embeddings([t], model_name=TEST_MODEL)
             single_embs.append(e[0])
 
-        for i, (batch_emb, single_emb) in enumerate(zip(embs, single_embs)):
-            assert batch_emb == single_emb, f"Mismatch at index {i}"
+        from app.services.embedding_service import _bytes_to_embedding
+
+        for i, (batch_emb_bytes, single_emb_bytes) in enumerate(zip(embs, single_embs)):
+            batch_emb = _bytes_to_embedding(batch_emb_bytes)
+            single_emb = _bytes_to_embedding(single_emb_bytes)
+            # Float32 arithmetic in sentence-transformers is not bit-deterministic
+            # between batch and single-shot encoding, so byte equality is too strict.
+            # Cosine similarity is the right invariant for ordering: the batch
+            # embedding for a text should point in the same direction as its
+            # single-shot embedding, to within numerical noise.
+            similarity = float(batch_emb @ single_emb / (
+                np.linalg.norm(batch_emb) * np.linalg.norm(single_emb)
+            ))
+            assert similarity > 0.9999, (
+                f"Mismatch at index {i}: cosine {similarity:.6f}"
+            )
 
     @requires_model
     def test_empty_text_list(self):

@@ -33,21 +33,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // On mount, try to restore session from stored tokens
   useEffect(() => {
-    const storedAccess = sessionStorage.getItem("access_token");
+    const storedAccess = localStorage.getItem("access_token") || sessionStorage.getItem("access_token");
     const storedRefresh = localStorage.getItem("refresh_token");
     if (storedAccess && storedRefresh) {
       setAccessToken(storedAccess);
       setRefreshToken(storedRefresh);
-      // We could verify the token by calling a /me endpoint, but the
-      // backend doesn't expose one — we trust the stored tokens. If
-      // they're expired, the 401 interceptor will handle it.
-      // For now, set a minimal user placeholder; the auth guard
-      // middleware runs first anyway.
+      // Persist to both stores for cross-tab resilience
+      localStorage.setItem("access_token", storedAccess);
+      sessionStorage.setItem("access_token", storedAccess);
       setUser({
         id: "",
         email: "",
         full_name: "",
         is_active: true,
+        username: null,
+        bio: null,
+        avatar_url: null,
       });
     }
     setIsLoading(false);
@@ -57,6 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const res = await authApi.login({ email, password });
     setAccessToken(res.access_token);
     setRefreshToken(res.refresh_token);
+    localStorage.setItem("access_token", res.access_token);
     sessionStorage.setItem("access_token", res.access_token);
     localStorage.setItem("refresh_token", res.refresh_token);
     // We don't have a /me endpoint; the user will be fetched
@@ -66,6 +68,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       email,
       full_name: "",
       is_active: true,
+      username: null,
+      bio: null,
+      avatar_url: null,
     });
   }, []);
 
@@ -88,6 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Logout server-side may fail if token already expired; clear locally anyway
     }
     clearTokens();
+    localStorage.removeItem("access_token");
     sessionStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
     setUser(null);

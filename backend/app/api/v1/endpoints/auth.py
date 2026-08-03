@@ -8,6 +8,7 @@ from app.db.session import get_db
 from app.schemas.auth import (
     ForgotPasswordRequest,
     LoginRequest,
+    ProfileUpdateRequest,
     RefreshTokenRequest,
     RegisterRequest,
     ResetPasswordRequest,
@@ -216,3 +217,47 @@ def reset_password(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(exc),
         )
+
+
+@router.get(
+    "/me",
+    response_model=UserResponse,
+)
+def get_profile(
+    current_user: User = Depends(get_current_active_user),
+):
+    """Get the current user's profile."""
+    return current_user
+
+
+@router.patch(
+    "/me",
+    response_model=UserResponse,
+)
+def update_profile(
+    data: ProfileUpdateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Update the current user's profile."""
+    if data.username is not None and data.username != current_user.username:
+        existing = db.query(User).filter(
+            User.username == data.username,
+            User.id != current_user.id,
+        ).first()
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Username already taken",
+            )
+        current_user.username = data.username
+    if data.full_name is not None:
+        current_user.full_name = data.full_name
+    if data.bio is not None:
+        current_user.bio = data.bio
+    if data.avatar_url is not None:
+        current_user.avatar_url = data.avatar_url
+
+    db.commit()
+    db.refresh(current_user)
+    return current_user

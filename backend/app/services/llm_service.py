@@ -40,6 +40,8 @@ def _provider_config() -> tuple[str, str, str]:
             return "https://api.x.ai/v1", settings.XAI_API_KEY, settings.XAI_MODEL
         case "groq":
             return "https://api.groq.com/openai/v1", settings.GROQ_API_KEY, settings.GROQ_MODEL
+        case "opencode":
+            return settings.OPENCODE_BASE_URL, settings.OPENCODE_API_KEY, settings.OPENCODE_MODEL
         case _:  # openrouter
             return "https://openrouter.ai/api/v1", settings.OPENROUTER_API_KEY, settings.LLM_MODEL
 

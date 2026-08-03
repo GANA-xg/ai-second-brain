@@ -1,16 +1,32 @@
 "use client";
-import { Sidebar } from "./Sidebar";
+import React from "react";
+import { cn } from "@/lib/utils";
 import { useRequireAuth } from "@/hooks/useAuth";
 import { Spinner } from "@/components/ui/Spinner";
+import { Sidebar } from "./Sidebar";
 
 export function ProtectedLayout({ children }: { children: React.ReactNode }) {
-  const { isLoading } = useRequireAuth();
-  if (isLoading) return <div className="flex items-center justify-center min-h-screen bg-surface"><Spinner size="lg" /></div>;
+  const { isAuthenticated, isLoading } = useRequireAuth();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-canvas transition-colors duration-200">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null;
+  }
+
   return (
-    <div className="flex min-h-screen bg-surface">
+    <div className="min-h-screen bg-canvas transition-colors duration-200">
       <Sidebar />
-      <main className="flex-1 ml-56 min-h-screen">
-        <div className="max-w-[var(--container-max)] mx-auto px-8 py-10">{children}</div>
+      <main className="ml-[250px] min-h-screen">
+        <div className="max-w-[1200px] mx-auto px-8 py-8">
+          {children}
+        </div>
       </main>
     </div>
   );

@@ -196,16 +196,22 @@ def list_memories(
     cache_key = memory_list_key(user_id, memory_type, is_active, include_deleted)
     cached = cache_service.get(cache_key)
     if cached is not None:
-        # Cached data is a list of dicts plus total count
+        # Cached data is the FULL filtered list (all pages). Pagination is
+        # applied below to produce the requested page.
+        # m["id"] arrives as a string after JSON deserialization, but the
+        # UUID(as_uuid=True) column expects a uuid.UUID instance in the bind.
         cached_memories = cached.get("memories", [])
         cached_total = cached.get("total", 0)
-        # Convert dicts back to Memory ORM objects
-        memories = [
-            db.query(Memory).filter(Memory.id == m["id"]).first()
-            for m in cached_memories
-        ]
-        memories = [m for m in memories if m is not None]
-        return memories, cached_total
+        memory_ids = [uuid.UUID(m["id"]) for m in cached_memories]
+        if not memory_ids:
+            return [], cached_total
+        memories_by_id = {
+            m.id: m
+            for m in db.query(Memory).filter(Memory.id.in_(memory_ids)).all()
+        }
+        ordered = [memories_by_id[mid] for mid in memory_ids if mid in memories_by_id]
+        start = (page - 1) * page_size
+        return ordered[start:start + page_size], cached_total
 
     query: Query = db.query(Memory).filter(Memory.user_id == user_id)
 
