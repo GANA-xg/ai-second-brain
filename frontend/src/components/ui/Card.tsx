@@ -1,16 +1,37 @@
 "use client";
 import React from "react";
-import { clsx } from "clsx";
+import { cn } from "@/lib/utils";
 
-interface CardProps { children: React.ReactNode; className?: string; hover?: boolean; onClick?: () => void; }
+interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+  hover?: boolean;
+  onClick?: () => void;
+  children: React.ReactNode;
+}
 
-export function Card({ children, className, hover, onClick }: CardProps) {
+export function Card({ hover, onClick, children, className, ...props }: CardProps) {
   return (
-    <div className={clsx("rounded-lg bg-surface-secondary border border-surface-border p-5",
-      hover && "transition-all duration-200 hover:bg-surface-card-hover hover:border-surface-border-hover cursor-pointer",
-      onClick && "cursor-pointer", className)}
-      onClick={onClick} role={onClick ? "button" : undefined} tabIndex={onClick ? 0 : undefined}
-      onKeyDown={onClick ? (e: React.KeyboardEvent) => { if (e.key==="Enter"||e.key===" ") { e.preventDefault(); onClick(); } } : undefined}>
+    <div
+      className={cn(
+        "airbnb-card",
+        hover && "cursor-pointer hover:shadow-airbnb-hover hover:border-border-strong active:scale-[0.99] transition-all duration-200",
+        onClick && "cursor-pointer",
+        className
+      )}
+      onClick={onClick}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={
+        onClick
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onClick();
+              }
+            }
+          : undefined
+      }
+      {...props}
+    >
       {children}
     </div>
   );

@@ -1,97 +1,505 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ── Apple Design System ── */
+/* ── Airbnb Design System + Apple Motion ── */
 :root {
-  --container-max: 1120px;
+  --rausch: #ff385c;
+  --rausch-active: #e00b41;
+  --rausch-disabled: #ffd1da;
+  --rausch-light: #fff0f3;
+  --ink: #222222;
+  --ink-body: #3f3f3f;
+  --ink-muted: #6a6a6a;
+  --ink-muted-soft: #929292;
+  --canvas: #ffffff;
+  --canvas-soft: #f7f7f7;
+  --canvas-strong: #f2f2f2;
+  --user-bubble: #222222;
+  --border: #dddddd;
+  --border-soft: #ebebeb;
+  --border-strong: #c1c1c1;
+  --error: #c13515;
+  --error-hover: #b32505;
+  --error-light: #fff0f0;
+  --success: #008a05;
+  --success-light: #f0fff0;
+  --info: #0066cc;
+  --info-light: #f0f6ff;
+  --warning: #cc8f00;
+  --warning-light: #fffbe6;
+  --scrim: rgba(0, 0, 0, 0.5);
+  --container-max: 1280px;
   --readable: 65ch;
+  --space-xxs: 2px;
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-base: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-xxl: 48px;
+  --space-section: 64px;
+}
 
-  --space-xxs: 4px;  --space-xs: 8px;  --space-sm: 12px;
-  --space-md: 17px; --space-lg: 24px; --space-xl: 32px;
-  --space-xxl: 48px; --space-section: 80px;
-
-  --radius-xs: 5px; --radius-sm: 8px;  --radius-md: 11px;
-  --radius-lg: 18px; --radius-pill: 9999px;
-
-  --shadow-product: 3px 5px 30px rgba(0,0,0,0.22);
+.dark {
+  --rausch: #ff385c;
+  --rausch-active: #e00b41;
+  --rausch-disabled: #6b1a2a;
+  --rausch-light: #2d1018;
+  --ink: #f0f0f0;
+  --ink-body: #d1d1d1;
+  --ink-muted: #999999;
+  --ink-muted-soft: #666666;
+  --canvas: #121212;
+  --canvas-soft: #1e1e1e;
+  --canvas-strong: #2a2a2a;
+  --user-bubble: #2a2a2a;
+  --border: #333333;
+  --border-soft: #2a2a2a;
+  --border-strong: #444444;
+  --error: #ff6b5a;
+  --error-light: #3d1510;
+  --success: #4ade80;
+  --success-light: #102918;
+  --info: #60a5fa;
+  --info-light: #101d33;
+  --warning: #fbbf24;
+  --warning-light: #2d2510;
+  --scrim: rgba(0, 0, 0, 0.7);
 }
 
 @layer base {
-  *, *::before, *::after { box-sizing: border-box; }
-  html { scroll-behavior: smooth; color-scheme: dark; }
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
 
   body {
-    font-family: "SF Pro Display", "SF Pro Text", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    font-size: 17px;
+    font-family: "Inter", "SF Pro Display", "SF Pro Text", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 16px;
     font-weight: 400;
-    line-height: 1.47;
-    letter-spacing: -0.374px;
-    color: #FFFFFF;
-    background-color: #272729;
+    line-height: 1.5;
+    letter-spacing: 0;
+    color: var(--ink);
+    background-color: var(--canvas);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 
-  h1, h2, h3, h4 {
+  h1, h2, h3, h4, h5, h6 {
     font-weight: 600;
     letter-spacing: -0.02em;
-    color: #FFFFFF;
+    color: var(--ink);
   }
 
-  ::selection { background-color: rgba(0,102,204,0.3); }
-  :focus-visible { outline: 2px solid #0071E3; outline-offset: 2px; border-radius: var(--radius-xs); }
+  ::selection {
+    background-color: rgba(255, 56, 92, 0.15);
+  }
 
-  ::-webkit-scrollbar { width: 6px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: var(--radius-pill); }
-  ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+  :focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 2px;
+    border-radius: 8px;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.12);
+    border-radius: 9999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.2);
+  }
+
+  .dark ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
 
   @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 
 @layer components {
-  .text-hero { font-size: 56px; font-weight: 600; line-height: 1.07; letter-spacing: -0.28px; }
-  .text-display-lg { font-size: 40px; font-weight: 600; line-height: 1.1; letter-spacing: 0; }
-  .text-display-md { font-size: 34px; font-weight: 600; line-height: 1.47; letter-spacing: -0.374px; }
-  .text-lead { font-size: 28px; font-weight: 400; line-height: 1.14; letter-spacing: 0.196px; }
-  .text-body { font-size: 17px; font-weight: 400; line-height: 1.47; letter-spacing: -0.374px; }
-  .text-body-strong { font-size: 17px; font-weight: 600; line-height: 1.24; letter-spacing: -0.374px; }
-  .text-caption { font-size: 14px; font-weight: 400; line-height: 1.43; letter-spacing: -0.224px; }
-  .text-caption-strong { font-size: 14px; font-weight: 600; line-height: 1.29; letter-spacing: -0.224px; }
-  .text-fine { font-size: 12px; font-weight: 400; line-height: 1.0; letter-spacing: -0.12px; }
-  .text-nav { font-size: 12px; font-weight: 400; line-height: 1.0; letter-spacing: -0.12px; }
+  /* ── Typography Scale ── */
+  .text-hero {
+    font-size: 56px;
+    font-weight: 600;
+    line-height: 1.07;
+    letter-spacing: -0.28px;
+  }
 
-  .focus-ring { outline: none; }
-  .focus-ring:focus-visible { outline: 2px solid #0071E3; outline-offset: 2px; }
+  .text-hero-sm {
+    font-size: 40px;
+    font-weight: 600;
+    line-height: 1.1;
+  }
 
-  .skeleton-pulse { @apply animate-pulse rounded-[11px]; background: rgba(255,255,255,0.06); }
+  .text-display-xl {
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1.43;
+  }
 
-  .app-surface { background-color: #272729; }
-  .app-surface-secondary { background-color: #2A2A2C; }
-  .app-surface-tertiary { background-color: #252527; }
-  .app-surface-black { background-color: #000000; }
+  .text-display-lg {
+    font-size: 22px;
+    font-weight: 500;
+    line-height: 1.18;
+    letter-spacing: -0.44px;
+  }
 
-  .apple-prose {
+  .text-display-md {
+    font-size: 21px;
+    font-weight: 700;
+    line-height: 1.43;
+  }
+
+  .text-display-sm {
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.18px;
+  }
+
+  .text-title-md {
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.25;
+  }
+
+  .text-title-sm {
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1.25;
+  }
+
+  .text-body-md {
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.5;
+  }
+
+  .text-body-sm {
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.43;
+  }
+
+  .text-caption {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.29;
+  }
+
+  .text-caption-sm {
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1.23;
+  }
+
+  .text-badge {
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.18;
+  }
+
+  .text-button-md {
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1.25;
+  }
+
+  .text-button-sm {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.29;
+  }
+
+  .text-nav-link {
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.25;
+  }
+
+  /* ── Surfaces ── */
+  .surface {
+    background-color: var(--canvas);
+    color: var(--ink);
+  }
+
+  .surface-soft {
+    background-color: var(--canvas-soft);
+  }
+
+  .surface-strong {
+    background-color: var(--canvas-strong);
+  }
+
+  .surface-card {
+    background-color: var(--canvas);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+  }
+
+  /* ── Glass Effect (Apple) ── */
+  .glass {
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+  }
+
+  .dark .glass {
+    background: rgba(30, 30, 30, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .glass-dark {
+    background: rgba(0, 0, 0, 0.72);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  /* ── Airbnb Card ── */
+  .airbnb-card {
+    background: var(--canvas);
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .airbnb-card:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 4px 16px rgba(0, 0, 0, 0.06);
+    border-color: var(--border-strong);
+  }
+
+  .dark .airbnb-card:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), 0 4px 16px rgba(0, 0, 0, 0.2);
+  }
+
+  /* ── Airbnb Button Base ── */
+  .btn-base {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    user-select: none;
+    text-decoration: none;
+  }
+
+  .btn-base:active {
+    transform: scale(0.98);
+  }
+
+  .btn-base:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* ── Airbnb Input ── */
+  .input-airbnb {
+    width: 100%;
+    background: var(--canvas);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 12px;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.5;
+    color: var(--ink);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .input-airbnb::placeholder {
+    color: var(--ink-muted-soft);
+  }
+
+  .input-airbnb:focus {
+    outline: none;
+    border-color: var(--ink);
+    box-shadow: 0 0 0 1px var(--ink);
+  }
+
+  .input-airbnb:disabled {
+    background: var(--canvas-soft);
+    color: var(--ink-muted);
+    cursor: not-allowed;
+  }
+
+  /* ── Skeleton ── */
+  .skeleton {
+    background: linear-gradient(90deg, var(--canvas-soft) 25%, var(--canvas-strong) 50%, var(--canvas-soft) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 8px;
+  }
+
+  /* ── Prose ── */
+  .prose-airbnb {
     max-width: var(--readable);
-    line-height: 1.47;
-    color: rgba(255,255,255,0.85);
+    line-height: 1.5;
+    color: var(--ink-body);
   }
-  .apple-prose p { margin-bottom: 1em; }
-  .apple-prose ul { list-style: disc; padding-left: 1.5em; margin-bottom: 1em; }
-  .apple-prose ol { list-style: decimal; padding-left: 1.5em; margin-bottom: 1em; }
-  .apple-prose li { margin-bottom: 0.25em; }
-  .apple-prose strong { font-weight: 600; color: #FFFFFF; }
-  .apple-prose code {
-    font-family: "SF Mono", "Fira Code", monospace; font-size: 0.875em;
-    background: rgba(255,255,255,0.08); padding: 0.125em 0.375em;
-    border-radius: 4px; color: #2997FF;
+
+  .prose-airbnb p {
+    margin-bottom: 1em;
   }
-  .apple-prose pre {
-    background: rgba(255,255,255,0.04); padding: 1em;
-    border-radius: var(--radius-lg); overflow-x: auto; margin-bottom: 1em;
-    border: 1px solid rgba(255,255,255,0.06);
+
+  .prose-airbnb ul {
+    list-style: disc;
+    padding-left: 1.5em;
+    margin-bottom: 1em;
+  }
+
+  .prose-airbnb ol {
+    list-style: decimal;
+    padding-left: 1.5em;
+    margin-bottom: 1em;
+  }
+
+  .prose-airbnb li {
+    margin-bottom: 0.25em;
+  }
+
+  .prose-airbnb strong {
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .prose-airbnb code {
+    font-family: "SF Mono", "Fira Code", monospace;
+    font-size: 0.875em;
+    background: var(--canvas-soft);
+    padding: 0.125em 0.375em;
+    border-radius: 4px;
+    color: var(--rausch);
+  }
+
+  .prose-airbnb pre {
+    background: var(--canvas-soft);
+    padding: 1em;
+    border-radius: 14px;
+    overflow-x: auto;
+    margin-bottom: 1em;
+    border: 1px solid var(--border);
+  }
+
+  .prose-airbnb pre code {
+    background: transparent;
+    padding: 0;
+    color: var(--ink);
+  }
+
+  /* ── Scrim (modal backdrop) ── */
+  .scrim {
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+
+  .dark .scrim {
+    background: rgba(0, 0, 0, 0.7);
+  }
+
+  /* ── Airbnb Shadow Tiers ── */
+  .shadow-airbnb {
+    box-shadow: rgba(0, 0, 0, 0.02) 0 0 0 1px, rgba(0, 0, 0, 0.04) 0 2px 6px 0, rgba(0, 0, 0, 0.1) 0 4px 8px 0;
+  }
+
+  .dark .shadow-airbnb {
+    box-shadow: rgba(0, 0, 0, 0.2) 0 0 0 1px, rgba(0, 0, 0, 0.3) 0 2px 6px 0, rgba(0, 0, 0, 0.4) 0 4px 8px 0;
+  }
+
+  .shadow-airbnb-hover {
+    box-shadow: rgba(0, 0, 0, 0.04) 0 0 0 1px, rgba(0, 0, 0, 0.08) 0 4px 12px 0, rgba(0, 0, 0, 0.12) 0 8px 24px 0;
+  }
+
+  .dark .shadow-airbnb-hover {
+    box-shadow: rgba(0, 0, 0, 0.3) 0 0 0 1px, rgba(0, 0, 0, 0.4) 0 4px 12px 0, rgba(0, 0, 0, 0.5) 0 8px 24px 0;
+  }
+
+  /* ── Apple Motion Classes ── */
+  .motion-fade {
+    transition: opacity 0.2s ease;
+  }
+
+  .motion-scale {
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .motion-slide-up {
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+  }
+
+  /* ── Toast ── */
+  .toast-container {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    pointer-events: none;
+  }
+
+  .toast {
+    pointer-events: auto;
+    background: var(--ink);
+    color: var(--canvas);
+    padding: 12px 20px;
+    border-radius: 14px;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.43;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 16px 64px rgba(0, 0, 0, 0.08);
+    animation: toastIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    max-width: 400px;
+    text-align: center;
+  }
+
+  .toast-success {
+    background: var(--ink);
+  }
+
+  .toast-error {
+    background: var(--error);
   }
 }

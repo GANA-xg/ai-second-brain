@@ -1,6 +1,16 @@
 "use client";
-import { clsx } from "clsx";
-interface SkeletonProps { className?: string; as?: "div"|"span"|"p"; }
-export function Skeleton({ className, as: Tag="div" }: SkeletonProps) {
-  return <Tag className={clsx("skeleton-pulse", className)} />;
+import React from "react";
+import { cn } from "@/lib/utils";
+
+interface SkeletonProps {
+  className?: string;
+}
+
+export function Skeleton({ className }: SkeletonProps) {
+  return (
+    <div
+      className={cn("skeleton", className)}
+      aria-hidden="true"
+    />
+  );
 }

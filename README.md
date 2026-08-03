@@ -1,34 +1,31 @@
-# AI Second Brain
+<div align="center">
 
-> Your personal AI-powered knowledge base — upload documents, chat with your knowledge, and let it quiz you, generate flashcards, and remember what matters.
+# 🧠 AI Second Brain
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.138-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
-[![Next.js](https://img.shields.io/badge/Next.js-14-000000?logo=next.js&logoColor=white)](https://nextjs.org/)
-[![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)](https://react.dev/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
-[![Redis](https://img.shields.io/badge/Redis-7-DC382D?logo=redis&logoColor=white)](https://redis.io/)
-[![Qdrant](https://img.shields.io/badge/Qdrant-latest-FF4545)](https://qdrant.tech/)
-[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](https://docs.docker.com/compose/)
+### Your personal AI-powered knowledge base
+
+**Upload documents → Chat with your knowledge → Learn with AI-generated flashcards & quizzes**
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
+[![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.138-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Next.js](https://img.shields.io/badge/Next.js-14-000000?style=flat-square&logo=next.js&logoColor=white)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-4169E1?style=flat-square&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Redis](https://img.shields.io/badge/Redis-7-DC382D?style=flat-square&logo=redis&logoColor=white)](https://redis.io/)
+[![Qdrant](https://img.shields.io/badge/Qdrant-latest-FF4545?style=flat-square)](https://qdrant.tech/)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat-square&logo=docker&logoColor=white)](https://docs.docker.com/compose/)
+
+</div>
 
 ---
 
-## 📸 Screenshots
+## 🎨 See It In Action
 
-| Login Page | Chat Interface |
-|:---:|:---:|
-| ![Login](docs/assets/screenshot-0.png) | ![Chat](docs/assets/screenshot-1.png) |
-
-| Document Library | Flashcards |
-|:---:|:---:|
-| ![Documents](docs/assets/screenshot-2.png) | ![Flashcards](docs/assets/screenshot-3.png) |
-
-| Quizzes | Settings |
-|:---:|:---:|
-| ![Quizzes](docs/assets/screenshot-4.png) | ![Settings](docs/assets/screenshot-5.png) |
-
-<!-- To update: drop PNG files into docs/assets/ named screenshot-0.png … screenshot-5.png -->
+<div align="center">
+  <img src="docs/assets/screenshot-1.png" alt="AI Second Brain Chat Interface" width="90%"/>
+  <p><i>Chat with your knowledge base — answers grounded in your uploaded documents</i></p>
+</div>
 
 ---
 
@@ -127,13 +124,35 @@ pytest tests/test_rag_golden.py tests/test_integration_smoke.py tests/test_files
 npm run lint
 ```
 
+CI runs exactly these, plus `ruff check .` from `./backend` (install with `pip install -r backend/requirements-dev.txt`).
+
 ---
 
 ## 🚢 Deployment
 
-> 🚧 **Deployment is scheduled for Week 21 of the roadmap.** This section will be updated with the production deployment guide once the target platform is finalized.
+Deployment is fully automated by GitHub Actions — see **[docs/deployment.md](docs/deployment.md)** for the full runbook.
 
-The stack is already containerized (per-service Dockerfiles + `docker-compose.yml` with Nginx reverse proxy), so deployment will be a matter of pointing `docker compose` at the production host with production secrets.
+```
+PR ──► CI (lint + pytest, must be green to merge)
+        │
+   merge to main
+        │
+        ▼
+      Build ──► SHA-tagged images pushed to GHCR (no `latest` tag)
+        │
+        ▼
+      Deploy ──► GCP VM: pull ──► alembic upgrade head ──► health check
+                                        └─ ❌ auto-rollback to previous SHA
+```
+
+| Pipeline | Trigger | File |
+| --- | --- | --- |
+| CI | PR to `main`/`develop` | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) |
+| Build | Push to `main` | [`.github/workflows/build.yml`](.github/workflows/build.yml) |
+| Deploy | Build success, or manual dispatch | [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) |
+
+**Rollback:** re-run the Deploy workflow with the previous commit SHA as the `image_tag` input (~2 minutes). Note that this reverts application code only — see the migrations caveat in the runbook.
+
 
 ---
 

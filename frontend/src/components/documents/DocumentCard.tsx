@@ -1,32 +1,90 @@
 "use client";
-import { Badge } from "@/components/ui/Badge";
+import React, { useCallback } from "react";
+import { cn } from "@/lib/utils";
 import type { DocumentResponse } from "@/lib/types";
+import { FileText, FileImage, File, Trash2, Check } from "lucide-react";
 
-const statusVariant = (s: string) => s==="READY"||s==="completed" ? "success" as const : s==="PROCESSING"||s==="processing"||s==="UPLOADED"||s==="uploaded" ? "info" as const : s==="FAILED"||s==="failed" ? "danger" as const : "default" as const;
-function fmtBytes(b: number) { if (b<1024) return `${b}B`; if (b<1048576) return `${(b/1024).toFixed(0)}KB`; return `${(b/1048576).toFixed(1)}MB`; }
-function timeAgo(d: string) { const n=Date.now(), t=new Date(d).getTime(), s=Math.floor((n-t)/1000); if (s<60) return "just now"; const m=Math.floor(s/60); if (m<60) return `${m}m ago`; const h=Math.floor(m/60); if (h<24) return `${h}h ago`; return `${Math.floor(h/24)}d ago`; }
-
-export function DocumentCard({ doc, onDelete }: { doc: DocumentResponse; onDelete: (id:string)=>void }) {
-  return (
-    <div className="flex items-center justify-between p-4 rounded-lg bg-surface-secondary border border-surface-border hover:border-surface-border-hover transition-colors">
-      <div className="flex items-center gap-4 min-w-0">
-        <div className="w-10 h-10 rounded-sm bg-apple-blue/15 flex items-center justify-center flex-shrink-0"><FileIcon ext={doc.extension} /></div>
-        <div className="min-w-0">
-          <p className="text-[15px] font-medium text-text-primary truncate max-w-[300px]">{doc.original_filename}</p>
-          <p className="text-[13px] text-text-tertiary mt-0.5">{fmtBytes(doc.file_size)} · {timeAgo(doc.created_at)}</p>
-        </div>
-      </div>
-      <div className="flex items-center gap-3">
-        <Badge variant={statusVariant(doc.status)}>{doc.status}</Badge>
-        <button onClick={()=>onDelete(doc.id)} className="text-text-tertiary hover:text-apple-red transition-colors p-1" aria-label="Delete document">
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
-        </button>
-      </div>
-    </div>
-  );
+interface DocumentCardProps {
+  doc: DocumentResponse;
+  onDelete?: (id: string) => void;
+  selected?: boolean;
+  onToggle?: (id: string, selected: boolean) => void;
 }
 
-function FileIcon({ ext }: { ext: string }) {
-  const c: Record<string,string> = { pdf:"text-apple-red", docx:"text-apple-blue", pptx:"text-apple-orange", txt:"text-text-tertiary", png:"text-apple-green", jpg:"text-apple-green", jpeg:"text-apple-green" };
-  return <svg className={`w-5 h-5 ${c[ext]||"text-text-tertiary"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>;
+export function DocumentCard({ doc, onDelete, selected, onToggle }: DocumentCardProps) {
+  const getIcon = () => {
+    if (doc.extension === ".pdf") return <FileText className="w-4 h-4" />;
+    if ([".png", ".jpg", ".jpeg"].includes(doc.extension)) return <FileImage className="w-4 h-4" />;
+    return <File className="w-4 h-4" />;
+  };
+
+  const formatSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const handleToggle = useCallback(() => {
+    onToggle?.(doc.id, !selected);
+  }, [doc.id, selected, onToggle]);
+
+  return (
+    <div
+      className={cn(
+        "group flex items-center gap-3 px-4 py-3 rounded-lg border transition-all duration-150",
+        selected
+          ? "bg-rausch-light border-rausch/30"
+          : "bg-canvas border-border hover:border-border-strong hover:shadow-card"
+      )}
+    >
+      {onToggle && (
+        <button
+          onClick={handleToggle}
+          className={cn(
+            "w-5 h-5 rounded flex items-center justify-center flex-shrink-0 border transition-all",
+            selected
+              ? "bg-rausch border-rausch text-white"
+              : "border-border-strong hover:border-ink"
+          )}
+        >
+          {selected && <Check className="w-3 h-3" />}
+        </button>
+      )}
+
+      <div className={cn(
+        "w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0",
+        selected ? "bg-rausch/10 text-rausch" : "bg-canvas-soft text-ink-muted"
+      )}>
+        {getIcon()}
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <p className="text-body-sm text-ink truncate font-medium">
+          {doc.original_filename}
+        </p>
+        <p className="text-caption-sm text-ink-muted-soft">
+          {formatSize(doc.file_size)}
+          {doc.status === "processed" && (
+            <span className="ml-2 text-success">&#10003; Ready</span>
+          )}
+          {doc.status === "processing" && (
+            <span className="ml-2 text-warning">Processing...</span>
+          )}
+          {doc.status === "error" && (
+            <span className="ml-2 text-error">Error</span>
+          )}
+        </p>
+      </div>
+
+      {onDelete && (
+        <button
+          onClick={() => onDelete(doc.id)}
+          className="w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-rausch-light text-ink-muted hover:text-error transition-all"
+          aria-label="Delete document"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      )}
+    </div>
+  );
 }

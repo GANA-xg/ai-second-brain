@@ -1,31 +1,99 @@
 "use client";
 import React, { useCallback, useRef, useState } from "react";
-import { clsx } from "clsx";
+import { cn } from "@/lib/utils";
+import { Upload, X } from "lucide-react";
 
-interface UploadZoneProps { onUpload: (file: File)=>void; uploading?: boolean; progress?: number; }
+interface UploadZoneProps {
+  onUpload: (file: File) => void;
+  uploading?: boolean;
+  progress?: number;
+}
 
 export function UploadZone({ onUpload, uploading, progress }: UploadZoneProps) {
-  const [dragging, setDragging] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const handleDrop = useCallback((e: React.DragEvent)=>{ e.preventDefault(); setDragging(false); const f=e.dataTransfer.files[0]; if (f) onUpload(f); },[onUpload]);
+
+  const handleDrag = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") setDragActive(true);
+    else if (e.type === "dragleave") setDragActive(false);
+  }, []);
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setDragActive(false);
+      if (e.dataTransfer.files?.[0]) {
+        onUpload(e.dataTransfer.files[0]);
+      }
+    },
+    [onUpload]
+  );
+
+  const handleChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (e.target.files?.[0]) {
+        onUpload(e.target.files[0]);
+        e.target.value = "";
+      }
+    },
+    [onUpload]
+  );
+
   return (
-    <div onDragOver={e=>{e.preventDefault();setDragging(true);}} onDragLeave={()=>setDragging(false)} onDrop={handleDrop} onClick={()=>inputRef.current?.click()}
-      className={clsx("relative border-2 border-dashed rounded-lg p-10 text-center cursor-pointer transition-all duration-200",
-        dragging ? "border-apple-blue bg-apple-blue/10" : "border-surface-border hover:border-surface-border-hover",
-        uploading && "pointer-events-none")}>
-      <input ref={inputRef} type="file" accept=".pdf,.docx,.pptx,.txt,.png,.jpg,.jpeg" className="hidden" onChange={e=>{const f=e.target.files?.[0];if(f)onUpload(f);}} disabled={uploading} />
-      {uploading ? (
-        <div className="space-y-3">
-          <p className="text-[15px] text-text-secondary">Uploading...</p>
-          {progress !== undefined && <div className="w-full max-w-xs mx-auto h-[6px] bg-white/10 rounded-pill overflow-hidden"><div className="h-full bg-apple-blue rounded-pill transition-all duration-300" style={{width:`${progress}%`}} /></div>}
-        </div>
-      ) : (
-        <>
-          <div className="mb-3 text-text-tertiary"><svg className="w-8 h-8 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" /></svg></div>
-          <p className="text-[15px] text-text-secondary"><span className="font-medium text-apple-blue-on-dark">Click to upload</span> or drag and drop</p>
-          <p className="text-[13px] text-text-tertiary mt-1">PDF, DOCX, PPTX, TXT, PNG, JPG (max 50MB)</p>
-        </>
+    <div
+      className={cn(
+        "relative border-2 border-dashed rounded-xl transition-all duration-200 cursor-pointer",
+        dragActive
+          ? "border-rausch bg-rausch-light"
+          : "border-border hover:border-border-strong hover:bg-canvas-soft",
+        uploading && "pointer-events-none"
       )}
+      onDragEnter={handleDrag}
+      onDragLeave={handleDrag}
+      onDragOver={handleDrag}
+      onDrop={handleDrop}
+      onClick={() => inputRef.current?.click()}
+    >
+      <input
+        ref={inputRef}
+        type="file"
+        className="hidden"
+        accept=".pdf,.docx,.pptx,.txt,.png,.jpg,.jpeg"
+        onChange={handleChange}
+      />
+
+      <div className="flex flex-col items-center justify-center py-10 px-6">
+        {uploading ? (
+          <>
+            <div className="w-12 h-12 rounded-full bg-rausch-light flex items-center justify-center mb-4">
+              <Upload className="w-5 h-5 text-rausch animate-bounce" />
+            </div>
+            <p className="text-body-sm text-ink font-medium mb-2">Uploading...</p>
+            <div className="w-48 h-1.5 bg-canvas-strong rounded-full overflow-hidden">
+              <div
+                className="h-full bg-rausch rounded-full transition-all duration-300"
+                style={{ width: `${progress || 0}%` }}
+              />
+            </div>
+            <p className="text-caption-sm text-ink-muted-soft mt-1">{progress || 0}%</p>
+          </>
+        ) : (
+          <>
+            <div className="w-12 h-12 rounded-full bg-canvas-soft flex items-center justify-center mb-4 text-ink-muted">
+              <Upload className="w-5 h-5" />
+            </div>
+            <p className="text-body-sm text-ink font-medium mb-1">
+              Drop a file here or <span className="text-rausch">browse</span>
+            </p>
+            <p className="text-caption-sm text-ink-muted-soft">
+              PDF, DOCX, PPTX, TXT, PNG, JPG up to 50MB
+            </p>
+          </>
+        )}
+      </div>
     </div>
   );
 }

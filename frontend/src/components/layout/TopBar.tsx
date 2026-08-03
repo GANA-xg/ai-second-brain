@@ -1,31 +1,64 @@
 "use client";
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { clsx } from "clsx";
+import React from "react";
+import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
 
-export function TopBar({ title, showBack, rightAction }: { title: string; showBack?: boolean; rightAction?: React.ReactNode }) {
-  const router = useRouter();
-  return (
-    <header className="mb-8">
-      <div className="flex items-center gap-3">
-        {showBack && <button onClick={()=>router.back()} className="flex items-center justify-center w-9 h-9 rounded-sm text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all duration-150" aria-label="Go back"><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg></button>}
-        <h1 className="text-[34px] font-semibold text-text-primary tracking-tight flex-1">{title}</h1>
-        {rightAction && <div>{rightAction}</div>}
-      </div>
-    </header>
-  );
+interface TopBarProps {
+  title: string;
+  subtitle?: string;
+  backHref?: string;
+  rightAction?: React.ReactNode;
+  tabs?: Array<{ label: string; active?: boolean; onClick?: () => void }>;
+  className?: string;
 }
 
-export function PageNav({ tabs }: { tabs: { href: string; label: string }[] }) {
-  const pathname = usePathname();
+export function TopBar({ title, subtitle, backHref, rightAction, tabs, className }: TopBarProps) {
+  const router = useRouter();
+
   return (
-    <nav className="flex gap-1 mb-8 border-b border-surface-border">
-      {tabs.map(tab => {
-        const isActive = pathname === tab.href;
-        return <Link key={tab.href} href={tab.href}
-          className={clsx("px-4 py-[10px] text-[17px] font-medium border-b-2 -mb-px transition-all duration-150",
-            isActive ? "border-apple-blue text-apple-blue-on-dark" : "border-transparent text-text-tertiary hover:text-text-secondary")}>{tab.label}</Link>;
-      })}
-    </nav>
+    <div className={cn("mb-8", className)}>
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-3">
+          {backHref && (
+            <button
+              onClick={() => router.push(backHref)}
+              className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-canvas-soft transition-colors text-ink-muted"
+              aria-label="Go back"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+          )}
+          <div>
+            <h1 className="text-display-xl text-ink">{title}</h1>
+            {subtitle && (
+              <p className="text-body-sm text-ink-muted mt-0.5">{subtitle}</p>
+            )}
+          </div>
+        </div>
+        {rightAction && <div>{rightAction}</div>}
+      </div>
+
+      {tabs && tabs.length > 0 && (
+        <div className="flex gap-6 mt-4 border-b border-border">
+          {tabs.map((tab, i) => (
+            <button
+              key={i}
+              onClick={tab.onClick}
+              className={cn(
+                "pb-3 text-nav-link transition-colors relative",
+                tab.active ? "text-ink" : "text-ink-muted hover:text-ink"
+              )}
+            >
+              {tab.label}
+              {tab.active && (
+                <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-ink rounded-full" />
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

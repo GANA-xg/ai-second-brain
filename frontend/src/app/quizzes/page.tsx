@@ -5,46 +5,134 @@ import { ProtectedLayout } from "@/components/layout/ProtectedLayout";
 import { TopBar } from "@/components/layout/TopBar";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { Input } from "@/components/ui/Input";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { useToast } from "@/components/ui/Toast";
 import { quizzesApi } from "@/lib/api-client";
+import { useDocuments } from "@/context/DocumentContext";
 import type { QuizSummary } from "@/lib/types";
+import { HelpCircle, Plus, Trash2 } from "lucide-react";
 
 export default function QuizzesPage() {
-  const router=useRouter();
-  const [quizzes, setQuizzes]=useState<QuizSummary[]>([]);
-  const [loading, setLoading]=useState(true);
-  const [generating, setGenerating]=useState(false);
-  const [topic, setTopic]=useState("");
+  const { documents } = useDocuments();
+  const router = useRouter();
+  const [quizzes, setQuizzes] = useState<QuizSummary[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
+  const [selectedDocId, setSelectedDocId] = useState<string>("");
+  const { toast } = useToast();
 
-  const fetchQuizzes=useCallback(async()=>{
+  const fetchData = useCallback(async () => {
     setLoading(true);
-    try{const data=await quizzesApi.list();setQuizzes(data.quizzes);}catch{}
-    finally{setLoading(false);}
-  },[]);
-  useEffect(()=>{fetchQuizzes();},[fetchQuizzes]);
+    try {
+      const quizzesRes = await quizzesApi.list({ page_size: 100 });
+      setQuizzes(quizzesRes.quizzes);
+    } catch (err) {
+      console.error("[QuizzesPage] fetchData:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  const handleGenerate=useCallback(async()=>{
-    if(!topic.trim())return;setGenerating(true);
-    try{const data=await quizzesApi.generate(topic.trim());router.push(`/quizzes/${data.quiz_id}`);}
-    catch{}finally{setGenerating(false);}
-  },[topic,router]);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
-  const handleDelete=useCallback(async(id:string)=>{try{await quizzesApi.delete(id);setQuizzes(p=>p.filter(q=>q.id!==id));}catch{}},[setQuizzes]);
+  const handleGenerate = useCallback(async () => {
+    if (!selectedDocId) return;
+    setGenerating(true);
+    try {
+      const res = await quizzesApi.generate(selectedDocId);
+      toast(res.message);
+      fetchData();
+      setSelectedDocId("");
+    } catch {
+      toast("Failed to generate quiz", "error");
+    } finally {
+      setGenerating(false);
+    }
+  }, [selectedDocId, fetchData, toast]);
 
-  return <ProtectedLayout><TopBar title="Quizzes" />
-    <div className="flex items-end gap-3 mb-8">
-      <div className="flex-1"><Input value={topic} onChange={e=>setTopic(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleGenerate()} placeholder="Enter a topic…" /></div>
-      <Button onClick={handleGenerate} loading={generating}>Generate Quiz</Button>
-    </div>
-    {loading?<div className="space-y-3">{[1,2].map(i=><Skeleton key={i} className="h-24 w-full" />)}</div>
-    :quizzes.length===0?<EmptyState title="No quizzes yet" description="Generate your first quiz above." />
-    :<div className="space-y-3">{quizzes.map(q=><Card key={q.id} hover onClick={()=>router.push(`/quizzes/${q.id}`)}>
-      <div className="flex items-center justify-between">
-        <div><p className="text-[17px] font-medium text-text-primary">{q.title}</p><p className="text-[13px] text-text-tertiary mt-0.5">{q.total_questions} questions</p></div>
-        <button onClick={e=>{e.stopPropagation();handleDelete(q.id);}} className="text-text-tertiary hover:text-apple-red transition-colors p-1" aria-label="Delete quiz"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg></button>
-      </div>
-    </Card>)}</div>}
-  </ProtectedLayout>;
+  const handleDelete = useCallback(async (id: string) => {
+    try {
+      await quizzesApi.delete(id);
+      setQuizzes(prev => prev.filter(q => q.id !== id));
+      toast("Quiz deleted");
+    } catch {
+      toast("Failed to delete", "error");
+    }
+  }, [toast]);
+
+  return (
+    <ProtectedLayout>
+      <TopBar title="Quizzes" subtitle="Test your knowledge" />
+
+      {/* Generate */}
+      <Card className="p-6 mb-8">
+        <h3 className="text-title-md text-ink mb-4">Generate from Document</h3>
+        <div className="flex items-end gap-3">
+          <div className="flex-1">
+            <label className="block text-caption text-ink-muted mb-1.5">Select a document</label>
+            <select
+              value={selectedDocId}
+              onChange={(e) => setSelectedDocId(e.target.value)}
+              className="input-airbnb"
+            >
+              <option value="">Choose a document...</option>
+              {documents.map(doc => (
+                <option key={doc.id} value={doc.id}>{doc.original_filename}</option>
+              ))}
+            </select>
+          </div>
+          <Button
+            onClick={handleGenerate}
+            loading={generating}
+            disabled={!selectedDocId}
+            icon={<Plus className="w-4 h-4" />}
+          >
+            Generate
+          </Button>
+        </div>
+      </Card>
+
+      {/* Quiz List */}
+      {loading ? (
+        <div className="space-y-3">
+          {[1, 2, 3].map(i => <Skeleton key={i} className="h-20 w-full" />)}
+        </div>
+      ) : quizzes.length === 0 ? (
+        <EmptyState
+          title="No quizzes yet"
+          description="Generate a quiz from a document to get started."
+          icon={<HelpCircle className="w-8 h-8" />}
+        />
+      ) : (
+        <div className="space-y-3">
+          {quizzes.map((quiz, i) => (
+            <Card
+              key={quiz.id}
+              hover
+              onClick={() => router.push(`/quizzes/${quiz.id}`)}
+              className="p-5 flex items-center gap-4 animate-fade-in-up"
+              style={{ animationDelay: `${i * 50}ms` } as React.CSSProperties}
+            >
+              <div className="w-12 h-12 rounded-xl bg-rausch-light flex items-center justify-center flex-shrink-0">
+                <HelpCircle className="w-6 h-6 text-rausch" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-title-md text-ink truncate">{quiz.title}</h3>
+                <p className="text-caption-sm text-ink-muted-soft">
+                  {quiz.total_questions} questions &middot; {new Date(quiz.created_at).toLocaleDateString()}
+                </p>
+              </div>
+              <button
+                onClick={(e) => { e.stopPropagation(); handleDelete(quiz.id); }}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-ink-muted hover:bg-rausch-light hover:text-error transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </Card>
+          ))}
+        </div>
+      )}
+    </ProtectedLayout>
+  );
 }
