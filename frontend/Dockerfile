@@ -5,6 +5,9 @@ RUN npm ci
 COPY . .
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+# git does not track empty directories, so on a clean checkout public/ may
+# not exist. Create it so the final-stage COPY never sees a missing source.
+RUN mkdir -p public
 RUN npm run build
 
 FROM node:20-alpine
