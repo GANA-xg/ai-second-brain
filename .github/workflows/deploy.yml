@@ -1,0 +1,195 @@
+name: Deploy
+
+# Two ways in:
+#   1. Automatically, once Build succeeds on main (deploys that commit).
+#   2. Manually via workflow_dispatch with an explicit image_tag — this is
+#      also the rollback path: dispatch with the previous commit SHA.
+#
+# Both go through the `production` GitHub Environment, so adding a required
+# reviewer there turns every deploy into an approval gate.
+on:
+  workflow_run:
+    workflows: [Build]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Commit SHA to deploy (full 40-char SHA of an image already in GHCR)"
+        required: true
+        type: string
+
+# Never run two deploys against the same VM at once, and never cancel one
+# mid-flight — a half-applied deploy is worse than a queued one.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  deploy:
+    name: Deploy to GCP
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # `environment` is what gates this job: add a required reviewer to the
+    # `production` environment to turn every deploy into an approval step.
+    environment: production
+
+    # On the workflow_run path, only deploy if the build actually passed.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+
+    steps:
+      - name: Resolve deploy target
+        id: target
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            tag="${{ inputs.image_tag }}"
+          else
+            tag="${{ github.event.workflow_run.head_sha }}"
+          fi
+          if [[ -z "$tag" ]]; then
+            echo "Could not resolve an image tag to deploy." >&2
+            exit 1
+          fi
+          repo_lower="$(echo "${GITHUB_REPOSITORY}" | tr '[:upper:]' '[:lower:]')"
+          {
+            echo "tag=${tag}"
+            echo "backend_image=ghcr.io/${repo_lower}/backend"
+            echo "frontend_image=ghcr.io/${repo_lower}/frontend"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          # Deploy the compose file / script from the exact commit being deployed.
+          ref: ${{ steps.target.outputs.tag }}
+
+      - name: Configure SSH
+        env:
+          SSH_KEY: ${{ secrets.GCP_SSH_KEY }}
+          SSH_HOST: ${{ secrets.GCP_SSH_HOST }}
+          SSH_KNOWN_HOSTS: ${{ secrets.GCP_SSH_KNOWN_HOSTS }}
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          if [[ -n "$SSH_KNOWN_HOSTS" ]]; then
+            printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          else
+            # Fall back to trust-on-first-use. Set the GCP_SSH_KNOWN_HOSTS
+            # secret to pin the host key and remove this MITM window.
+            echo "::warning::GCP_SSH_KNOWN_HOSTS not set; falling back to ssh-keyscan (TOFU)."
+            ssh-keyscan -H "$SSH_HOST" > ~/.ssh/known_hosts 2>/dev/null
+          fi
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Sync deployment files to VM
+        env:
+          SSH_HOST: ${{ secrets.GCP_SSH_HOST }}
+          SSH_USER: ${{ secrets.GCP_SSH_USER }}
+          DEPLOY_DIR: ${{ vars.DEPLOY_DIR || '/opt/ai-second-brain' }}
+        run: |
+          ssh -i ~/.ssh/deploy_key -o BatchMode=yes "${SSH_USER}@${SSH_HOST}" \
+            "mkdir -p '${DEPLOY_DIR}/nginx' '${DEPLOY_DIR}/scripts'"
+          scp -i ~/.ssh/deploy_key -o BatchMode=yes \
+            docker-compose.prod.yml "${SSH_USER}@${SSH_HOST}:${DEPLOY_DIR}/"
+          scp -i ~/.ssh/deploy_key -o BatchMode=yes \
+            nginx/nginx.conf "${SSH_USER}@${SSH_HOST}:${DEPLOY_DIR}/nginx/"
+          scp -i ~/.ssh/deploy_key -o BatchMode=yes \
+            scripts/deploy_remote.sh "${SSH_USER}@${SSH_HOST}:${DEPLOY_DIR}/scripts/"
+          ssh -i ~/.ssh/deploy_key -o BatchMode=yes "${SSH_USER}@${SSH_HOST}" \
+            "chmod +x '${DEPLOY_DIR}/scripts/deploy_remote.sh'"
+
+      - name: Write application secrets to VM
+        env:
+          SSH_HOST: ${{ secrets.GCP_SSH_HOST }}
+          SSH_USER: ${{ secrets.GCP_SSH_USER }}
+          DEPLOY_DIR: ${{ vars.DEPLOY_DIR || '/opt/ai-second-brain' }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          # The application setting is named SECRET_KEY; the GitHub secret is
+          # named JWT_SECRET_KEY to say plainly what it signs.
+          SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          APP_BASE_URL: ${{ vars.APP_URL }}
+          NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL || '/api/v1' }}
+          BACKEND_IMAGE: ${{ steps.target.outputs.backend_image }}
+          FRONTEND_IMAGE: ${{ steps.target.outputs.frontend_image }}
+          IMAGE_TAG: ${{ steps.target.outputs.tag }}
+        run: |
+          # Built in $RUNNER_TEMP (outside the workspace) and piped over ssh;
+          # never printed, never uploaded as an artifact.
+          env_file="${RUNNER_TEMP}/deploy.env"
+          umask 077
+          {
+            echo "ENV=production"
+            echo "DEBUG=false"
+            echo "POSTGRES_PASSWORD=${POSTGRES_PASSWORD}"
+            echo "SECRET_KEY=${SECRET_KEY}"
+            echo "GEMINI_API_KEY=${GEMINI_API_KEY}"
+            echo "OPENROUTER_API_KEY=${OPENROUTER_API_KEY}"
+            echo "APP_BASE_URL=${APP_BASE_URL}"
+            echo "NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}"
+            echo "BACKEND_IMAGE=${BACKEND_IMAGE}"
+            echo "FRONTEND_IMAGE=${FRONTEND_IMAGE}"
+            echo "IMAGE_TAG=${IMAGE_TAG}"
+          } > "$env_file"
+          scp -i ~/.ssh/deploy_key -o BatchMode=yes \
+            "$env_file" "${SSH_USER}@${SSH_HOST}:${DEPLOY_DIR}/.env"
+          ssh -i ~/.ssh/deploy_key -o BatchMode=yes "${SSH_USER}@${SSH_HOST}" \
+            "chmod 600 '${DEPLOY_DIR}/.env'"
+          rm -f "$env_file"
+
+      - name: Log in to GHCR on the VM
+        env:
+          SSH_HOST: ${{ secrets.GCP_SSH_HOST }}
+          SSH_USER: ${{ secrets.GCP_SSH_USER }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # --password-stdin so the token never lands in a process list or log.
+          printf '%s' "$GHCR_TOKEN" | ssh -i ~/.ssh/deploy_key -o BatchMode=yes \
+            "${SSH_USER}@${SSH_HOST}" \
+            "docker login ghcr.io -u '${{ github.actor }}' --password-stdin"
+
+      - name: Deploy (pull, migrate, health check, rollback on failure)
+        env:
+          SSH_HOST: ${{ secrets.GCP_SSH_HOST }}
+          SSH_USER: ${{ secrets.GCP_SSH_USER }}
+          DEPLOY_DIR: ${{ vars.DEPLOY_DIR || '/opt/ai-second-brain' }}
+          HEALTH_CHECK_URL: ${{ vars.HEALTH_CHECK_URL || 'http://localhost/api/v1/health/' }}
+        run: |
+          ssh -i ~/.ssh/deploy_key -o BatchMode=yes "${SSH_USER}@${SSH_HOST}" \
+            "DEPLOY_DIR='${DEPLOY_DIR}' \
+             IMAGE_TAG='${{ steps.target.outputs.tag }}' \
+             BACKEND_IMAGE='${{ steps.target.outputs.backend_image }}' \
+             FRONTEND_IMAGE='${{ steps.target.outputs.frontend_image }}' \
+             HEALTH_CHECK_URL='${HEALTH_CHECK_URL}' \
+             TRIGGERED_BY='${{ github.actor }}' \
+             bash '${DEPLOY_DIR}/scripts/deploy_remote.sh'"
+
+      - name: Record deployment
+        if: always()
+        run: |
+          {
+            echo "### Deployment ${{ job.status }}"
+            echo ""
+            echo "| Field | Value |"
+            echo "| --- | --- |"
+            echo "| Commit SHA | \`${{ steps.target.outputs.tag }}\` |"
+            echo "| Triggered by | @${{ github.actor }} |"
+            echo "| Trigger | ${{ github.event_name }} |"
+            echo "| Timestamp (UTC) | $(date -u +%Y-%m-%dT%H:%M:%SZ) |"
+            echo "| Result | ${{ job.status }} |"
+            echo ""
+            echo "To roll back: re-run this workflow via **Run workflow** with the previous commit SHA as \`image_tag\`."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Clean up SSH key
+        if: always()
+        run: rm -f ~/.ssh/deploy_key

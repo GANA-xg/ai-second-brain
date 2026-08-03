@@ -1,0 +1,25 @@
+# Ruff configuration for the backend.
+#
+# The CI gate deliberately selects only the "this is almost certainly a bug"
+# rules so it stays signal, not noise:
+#   E9  - syntax / IO errors ruff cannot recover from
+#   F63 - comparisons that are always true/false (e.g. `is` on literals)
+#   F7  - misplaced statements (break outside loop, etc.)
+#   F82 - undefined names
+#
+# Style rules (import sorting, unused imports, pyupgrade) are intentionally
+# not enabled yet - see docs/deployment.md "Tightening the lint gate" for how
+# to roll them in incrementally without a 700-violation big-bang commit.
+
+target-version = "py311"
+line-length = 100
+exclude = ["alembic/versions", ".venv", "storage", "logs"]
+
+[lint]
+select = ["E9", "F63", "F7", "F82"]
+
+[lint.per-file-ignores]
+# SQLAlchemy declarative models use string forward references
+# (`Mapped["User"]`) that are resolved at runtime by the registry, so ruff's
+# static undefined-name check reports false positives here.
+"app/models/*.py" = ["F821"]

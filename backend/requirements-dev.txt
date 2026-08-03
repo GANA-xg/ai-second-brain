@@ -1,0 +1,5 @@
+# Development / CI-only dependencies.
+# Runtime dependencies live in requirements.txt and are NOT duplicated here.
+-r requirements.txt
+
+ruff==0.16.1
